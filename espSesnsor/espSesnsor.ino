@@ -2,14 +2,19 @@
 #include <WiFi.h>//to find MAC 
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <DHT.h>
+
+#define DHT_TYPE 11
+#define DHT_PIN 0
+
 
 //Receiver Address
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-struct incomingData {
-  int temp;
-  int hum;
-} incomingData;
+typedef struct Data {
+  uint8_t temp;
+  uint8_t hum;
+} data;
 
 //for peerinfo
 esp_now_peer_info_t peerInfo;
@@ -18,6 +23,7 @@ esp_now_peer_info_t peerInfo;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  char *success;
   if (status == 0) {
     success = "Delivery Success";
   } else {
@@ -25,12 +31,12 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   }
 }
 //callback for receiving data
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&incomingReadings, incomingData, sizeof(incomingReads));
+void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len) {
+  memcpy(&data, data, sizeof(data));
   Serial.println("Bytes Received: ");
   Serial.println(len);
-  incomingTemp = incomingReading.temp;
-  incomingHum = incomingReadings.hum;
+  int incomingTemp = data.temp;
+  int incomingHum = data.hum;
 }
 
 //to find MAC
@@ -59,12 +65,12 @@ void setup() {
     return;
   }
   //registers esp to get transmitted packet data
-  if (esp_now_register_send_cb(onDataSent) != ESP_OK) {
+  if (esp_now_register_send_cb(OnDataSent) != ESP_OK) {
     Serial.println("Packet Registration Error!");
     return;
   }
   //registers peer
-  memcpy(peerInfo.peer_addr, MAC, 6)
+  memcpy(peerInfo.peer_addr, MAC, 6);//6 = sizeof(MAC)
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
   //adds peer
@@ -77,7 +83,7 @@ void setup() {
 }
 
 void loop() {
-  if (esp_now_send(MAC, &incomingData, sizeof(incomingData)) != ESP_OK) {
+  if (esp_now_send(MAC, &data, sizeof(data)) != ESP_OK) {
     Serial.println("Sent with Success");
   } else {
     Serial.println("Error Sending the Data!");
