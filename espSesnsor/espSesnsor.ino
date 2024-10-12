@@ -12,10 +12,14 @@
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
 typedef struct Data {
-  uint8_t temp;
-  uint8_t hum;
+  int temp;
+  int hum;
 } data;
 
+char *success;
+
+int globalTemp;
+int globalHum;
 //for peerinfo
 esp_now_peer_info_t peerInfo;
 
@@ -23,7 +27,6 @@ esp_now_peer_info_t peerInfo;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  char *success;
   if (status == 0) {
     success = "Delivery Success";
   } else {
@@ -31,13 +34,13 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   }
 }
 //callback for receiving data
-void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len) {
-  memcpy(&data, data, sizeof(data));
-  Serial.println("Bytes Received: ");
-  Serial.println(len);
-  int incomingTemp = data.temp;
-  int incomingHum = data.hum;
-}
+// void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len) {
+// //   memcpy(&globalTem, data, sizeof(data));
+// //   Serial.println("Bytes Received: ");
+// //   Serial.println(len);
+// //   globalTemp = data.temp;
+// //   globalHum = data.hum;
+// // }
 
 //to find MAC
 void readMACAddress(){
@@ -79,11 +82,11 @@ void setup() {
     return;
   }
   //Registers cb function that is called when data is received 
-  esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+ // esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 }
 
 void loop() {
-  if (esp_now_send(MAC, &data, sizeof(data)) != ESP_OK) {
+  if (esp_now_send(MAC, (uint8_t *) &data, sizeof(data)) != ESP_OK) {//casts struct elements to uint8_t elements
     Serial.println("Sent with Success");
   } else {
     Serial.println("Error Sending the Data!");
