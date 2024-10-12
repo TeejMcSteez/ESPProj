@@ -16,7 +16,7 @@ esp_now_peer_info_t peerInfo;
 //checksum for function
 char *success;
 //global variable for distance measure
-uint8_t * globalDist;
+uint8_t globalDist;
 
 //callback to send data
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -51,7 +51,7 @@ int distSensor() {
   duration = pulseIn(ECHO_PIN, HIGH);
   //calculates distance
   distance = duration * 0.034/2;
-  return dist; 
+  return distance; 
 }
 
 void setup() {
@@ -88,9 +88,9 @@ void setup() {
 
 void loop() {
   //gets distance of sensor to send to receiver
-  *globalDist = distSensor();
+  globalDist = distSensor();
   //stores function call in result for error checking and follows API documentation
-  esp_err_t result = esp_now_send(MAC, globalDist, sizeof(globalDist)); 
+  esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
   if (result != ESP_OK) {
     Serial.println("Sent with Success");
