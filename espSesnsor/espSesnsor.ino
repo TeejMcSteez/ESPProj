@@ -10,18 +10,17 @@
 
 //Receiver Address
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-
+//defininig structured message to send 
 typedef struct Data {
-  int temp;
-  int hum;
+  int dist;
 } data;
 
-char *success;
-
-int globalTemp;
-int globalHum;
 //for peerinfo
 esp_now_peer_info_t peerInfo;
+//checksum for function
+char *success;
+//global variable for distance measure
+uint8_t * globalDist;
 
 //callback to send data
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -33,14 +32,6 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
     success = "Delivery Fail";
   }
 }
-//callback for receiving data
-// void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len) {
-// //   memcpy(&globalTem, data, sizeof(data));
-// //   Serial.println("Bytes Received: ");
-// //   Serial.println(len);
-// //   globalTemp = data.temp;
-// //   globalHum = data.hum;
-// // }
 
 //to find MAC
 void readMACAddress(){
@@ -81,12 +72,10 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
-  //Registers cb function that is called when data is received 
- // esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 }
 
 void loop() {
-  if (esp_now_send(MAC, (uint8_t *) &data, sizeof(data)) != ESP_OK) {//casts struct elements to uint8_t elements
+  if (esp_now_send(MAC, globalDist, sizeof(globalDist)) != ESP_OK) {//casts struct elements to uint8_t elements
     Serial.println("Sent with Success");
   } else {
     Serial.println("Error Sending the Data!");
