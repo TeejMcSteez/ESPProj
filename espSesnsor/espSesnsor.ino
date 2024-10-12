@@ -2,19 +2,15 @@
 #include <WiFi.h>//to find MAC 
 #include <esp_now.h>
 #include <esp_wifi.h>
-#include <DHT.h>
 
-#define DHT_TYPE 11
-#define DHT_PIN 0
-
+const int TRIGGER_PIN = 0;
+const int ECHO_PIN = 1;
+//variables to calculate distance
+long duration;
+int distance;
 
 //Receiver Address
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-//defininig structured message to send 
-typedef struct Data {
-  int dist;
-} data;
-
 //for peerinfo
 esp_now_peer_info_t peerInfo;
 //checksum for function
@@ -44,7 +40,23 @@ void readMACAddress(){
   }
 }
 
+int distSensor() {
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+  //CALCULATE DISTANCE
+  //reads wave travel time in microseconds
+  duration = pulseIn(ECHO_PIN, HIGH);
+  //calculates distance
+  distance = duration * 0.034/2;
+  return dist; 
+}
+
 void setup() {
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
 
@@ -53,7 +65,7 @@ void setup() {
   // Serial.print("MAC: ");
   // readMACAddress();
 
-  //Initializes esp_now which has to be done after starting WiFi
+  //Initializes esp_now which has to be done after starting WiFi!
   if (esp_now_init() != ESP_OK) {
     Serial.println("ERROR, ESP Init Failed . . .");
     return;
@@ -75,7 +87,12 @@ void setup() {
 }
 
 void loop() {
-  if (esp_now_send(MAC, globalDist, sizeof(globalDist)) != ESP_OK) {//casts struct elements to uint8_t elements
+  //gets distance of sensor to send to receiver
+  *globalDist = distSensor();
+  //stores function call in result for error checking and follows API documentation
+  esp_err_t result = esp_now_send(MAC, globalDist, sizeof(globalDist)); 
+
+  if (result != ESP_OK) {
     Serial.println("Sent with Success");
   } else {
     Serial.println("Error Sending the Data!");
@@ -83,3 +100,4 @@ void loop() {
 
   delay(10000);//10 second delay  
 }
+
