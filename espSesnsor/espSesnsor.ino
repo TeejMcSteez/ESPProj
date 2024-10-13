@@ -3,11 +3,8 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 
-const int TRIGGER_PIN = 0;
-const int ECHO_PIN = 1;
-//variables to calculate distance
-long duration;
-int distance;
+const int TRIGGER_PIN = 23;
+const int ECHO_PIN = 0;
 
 //Receiver Address
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -21,26 +18,18 @@ uint8_t globalDist;
 //callback to send data
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Sent with Success" : "Failed to send");
   if (status == 0) {
-    success = "Delivery Success";
+    success = "Sent with Success";
   } else {
-    success = "Delivery Fail";
-  }
-}
-
-//to find MAC
-void readMACAddress(){
-  uint8_t baseMAC[6];
-  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMAC);
-  if (ret == ESP_OK) {
-    Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n", baseMAC[0], baseMAC[1], baseMAC[2], baseMAC[3], baseMAC[4], baseMAC[5]);
-  } else {
-    Serial.println("Failed to read MAC address");
+    success = "Failed to send";
   }
 }
 
 int distSensor() {
+  //variables to calculate distance
+  long duration;
+  float distance;
   digitalWrite(TRIGGER_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIGGER_PIN, HIGH);
@@ -49,9 +38,13 @@ int distSensor() {
   //CALCULATE DISTANCE
   //reads wave travel time in microseconds
   duration = pulseIn(ECHO_PIN, HIGH);
+  /*
+  Problem with distance calculation as I want to use an integer however a floating point value defaults
+  to 0 therefore the output will always be 0. Have to cast the result of the calculation (float) to the distance (int)
+  */
   //calculates distance
-  distance = duration * 0.034/2;
-  return distance; 
+  distance = duration * 0.034/2;//duration (in ms) * V/K
+  return (int) distance; 
 }
 
 void setup() {
@@ -59,11 +52,6 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
-
-  //code to find MAC
-  // WiFi.STA.begin();
-  // Serial.print("MAC: ");
-  // readMACAddress();
 
   //Initializes esp_now which has to be done after starting WiFi!
   if (esp_now_init() != ESP_OK) {
@@ -89,15 +77,17 @@ void setup() {
 void loop() {
   //gets distance of sensor to send to receiver
   globalDist = distSensor();
+  Serial.print("Global Distance: ");
+  Serial.println(globalDist);
   //stores function call in result for error checking and follows API documentation
   esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
   if (result != ESP_OK) {
     Serial.println("Sent with Success");
   } else {
-    Serial.println("Error Sending the Data!");
+    Serial.println("Error W/ Reciever accepting the Data!");
+    Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
   }
 
   delay(10000);//10 second delay  
 }
-
