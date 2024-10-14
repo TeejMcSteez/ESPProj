@@ -1,3 +1,13 @@
+
+/*
+TODO:
+Figure out how to properly handle the distance function to measure
+distance as a float but somehow handle it as an 8 bit integer
+Also, Test sending the packet to the other ESP and make sure it can 
+register the peer and assign the value to the local variable to use in function
+*/
+
+
 //URL For Sketch Skeleton: https://randomnerdtutorials.com/esp-now-two-way-communication-esp32/
 #include <WiFi.h>//to find MAC 
 #include <esp_now.h>
@@ -7,13 +17,15 @@ const int TRIGGER_PIN = 23;
 const int ECHO_PIN = 0;
 
 //Receiver Address
-uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+uint8_t MAC[] = {0x24,0xDC,0xC3,0x44,0xDC,0x70};
 //for peerinfo
 esp_now_peer_info_t peerInfo;
 //checksum for function
 char *success;
 //global variable for distance measure
 uint8_t globalDist;
+long duration;
+float distance;
 
 //callback to send data
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -26,10 +38,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   }
 }
 
-int distSensor() {
+float distSensor() {
   //variables to calculate distance
-  long duration;
-  float distance;
   digitalWrite(TRIGGER_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIGGER_PIN, HIGH);
@@ -41,10 +51,13 @@ int distSensor() {
   /*
   Problem with distance calculation as I want to use an integer however a floating point value defaults
   to 0 therefore the output will always be 0. Have to cast the result of the calculation (float) to the distance (int)
+  Or maybe its a problem with how I handle the variables in my code idek
   */
-  //calculates distance
-  distance = duration * 0.034/2;//duration (in ms) * V/K
-  return (int) distance; 
+  //calculates distance 
+  distance = (duration * 0.034)/2;
+  Serial.print("Distance at function (as float): ");
+  Serial.println(distance);
+  return distance; 
 }
 
 void setup() {
@@ -77,8 +90,10 @@ void setup() {
 void loop() {
   //gets distance of sensor to send to receiver
   globalDist = distSensor();
+  globalDist = (int)globalDist;
+
   Serial.print("Global Distance: ");
-  Serial.println(globalDist);
+  Serial.println((int)globalDist);
   //stores function call in result for error checking and follows API documentation
   esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
@@ -89,5 +104,5 @@ void loop() {
     Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
   }
 
-  delay(10000);//10 second delay  
+  delay(5000);//5 second delay  
 }
