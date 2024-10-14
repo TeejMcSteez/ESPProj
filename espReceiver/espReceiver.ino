@@ -10,7 +10,7 @@ Maybe implement a small HTTP server also to see the values or notification logs 
 #include <esp_now.h>
 #include <esp_wifi.h>
 
-uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};//Not currently needed for receiver
 
 const int LED_PIN_1 = 13;//blue
 const int LED_PIN_2 = 0;//red
@@ -40,18 +40,18 @@ void OnDataRecv(const uint8_t * MAC, const uint8_t *dist, int len) {
 
   checkDist(incomingDist);
 }
-
+//Should miss 4 packets while executing 
 void checkDist(uint8_t dist) {
   uint8_t x = 90;//some distance assign when testing
   if (dist >= x) {
     Serial.println("GREATER THAN OR =");
     digitalWrite(LED_PIN_1, HIGH);
-    delay(2000);
+    delay(500);
     digitalWrite(LED_PIN_1, LOW);
   } else {
     Serial.println("LESS THAN");
     digitalWrite(LED_PIN_2, HIGH);
-    delay(2000);
+    delay(500);
     digitalWrite(LED_PIN_2, LOW);
   }
 }
@@ -85,7 +85,7 @@ void setup() {
 
 void loop() {
 
-  delay(1000);
+  delay(500);
 
 }
 

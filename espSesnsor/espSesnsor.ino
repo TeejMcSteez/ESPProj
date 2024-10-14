@@ -57,7 +57,7 @@ float distSensor() {
   Or maybe its a problem with how I handle the variables in my code idek
   */
   //calculates distance 
-  distance = ((duration * 0.034)/2) * 100;//formula = D * 0.034/2 and * 100 is to convert into cm
+  distance = (duration * 0.034)/2;//formula = D * 0.034/2 and * 100 is to convert into cm
   
   if (distance < 1) {
     Serial.println("Distance is < 1, returning 0");
@@ -116,5 +116,5 @@ void loop() {
     Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
   }
 
-  delay(500);//.5 second delay  
+  delay(1000);//.5 second delay  
 }
