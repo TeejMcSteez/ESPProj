@@ -1,10 +1,10 @@
 
 /*
 TODO:
+Fix distance and pulse in wiring issues 
+Fix sending improper amounts of data or loss of packets (maybe)
 Figure out how to properly handle the distance function to measure
 distance as a float but somehow handle it as an 8 bit integer
-Also, Test sending the packet to the other ESP and make sure it can 
-register the peer and assign the value to the local variable to use in function
 */
 
 
@@ -39,6 +39,7 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 
 float distSensor() {
+  duration = 0;
   //variables to calculate distance
   digitalWrite(TRIGGER_PIN, LOW);
   delayMicroseconds(2);
@@ -48,16 +49,25 @@ float distSensor() {
   //CALCULATE DISTANCE
   //reads wave travel time in microseconds
   duration = pulseIn(ECHO_PIN, HIGH);
+  Serial.print("Duration: ");
+  Serial.println(duration);
   /*
   Problem with distance calculation as I want to use an integer however a floating point value defaults
   to 0 therefore the output will always be 0. Have to cast the result of the calculation (float) to the distance (int)
   Or maybe its a problem with how I handle the variables in my code idek
   */
   //calculates distance 
-  distance = (duration * 0.034)/2;
-  Serial.print("Distance at function (as float): ");
-  Serial.println(distance);
-  return distance; 
+  distance = ((duration * 0.034)/2) * 100;//formula = D * 0.034/2 and * 100 is to convert into cm
+  
+  if (distance < 1) {
+    Serial.println("Distance is < 1, returning 0");
+    return 0;
+  } else if (distance > 255) {
+    Serial.println("Distance > 255, returning 255");
+    return 255;
+  } else {
+    return static_cast<uint8_t>(distance);
+  } 
 }
 
 void setup() {
@@ -88,12 +98,14 @@ void setup() {
 }
 
 void loop() {
+  //resets global distance variable for every distance
+  globalDist = 0;
   //gets distance of sensor to send to receiver
   globalDist = distSensor();
-  globalDist = (int)globalDist;
+  delay(2);
 
   Serial.print("Global Distance: ");
-  Serial.println((int)globalDist);
+  Serial.println(globalDist);
   //stores function call in result for error checking and follows API documentation
   esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
@@ -104,5 +116,5 @@ void loop() {
     Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
   }
 
-  delay(5000);//5 second delay  
+  delay(500);//.5 second delay  
 }

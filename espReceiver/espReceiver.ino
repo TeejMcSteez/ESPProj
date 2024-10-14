@@ -1,41 +1,58 @@
 //URL For Sketch Skeleton: https://randomnerdtutorials.com/esp-now-two-way-communication-esp32/
+/*
+TODO:
+Network communication works 
+Outputting to the LED lights doesnt work prob wiring issue 
+See what I can do about other packet sizes or handling less packet loss.
+Maybe implement a small HTTP server also to see the values or notification logs on a display
+*/
 #include <WiFi.h>//to find MAC 
 #include <esp_now.h>
 #include <esp_wifi.h>
 
 uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
+const int LED_PIN_1 = 13;//blue
+const int LED_PIN_2 = 0;//red
+
 esp_now_peer_info_t peerInfo;
 
 uint8_t incomingDist;
 
-void OnDataRecv(const uint8_t * MAC, const uint8_t * dist, int len) {
-  memcpy(&dist, dist, sizeof(dist));
+void OnDataRecv(const uint8_t * MAC, const uint8_t *dist, int len) {
   incomingDist = * dist;
   Serial.print("Bytes Received:");
   Serial.println(len);
+  Serial.print("From MAC: ");
+  Serial.print(*MAC + 0);
+  Serial.print(":");
+  Serial.print(*MAC + 1);
+  Serial.print(":");
+  Serial.print(*MAC + 2);
+  Serial.print(":");
+  Serial.print(*MAC + 3);
+  Serial.print(":");
+  Serial.print(*MAC + 4);
+  Serial.print(":");
+  Serial.println(*MAC + 5);
   Serial.print("Distance Received:");
-  Serial.println(* dist);
+  Serial.println(incomingDist);
+
   checkDist(incomingDist);
 }
 
 void checkDist(uint8_t dist) {
-  int x;//some distance assign when testing
-  if (dist < x) {
-    //output 
+  uint8_t x = 90;//some distance assign when testing
+  if (dist >= x) {
+    Serial.println("GREATER THAN OR =");
+    digitalWrite(LED_PIN_1, HIGH);
+    delay(2000);
+    digitalWrite(LED_PIN_1, LOW);
   } else {
-    //output
-  }
-}
-
-//to find MAC
-void readMACAddress(){
-  uint8_t baseMAC[6];
-  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMAC);
-  if (ret == ESP_OK) {
-    Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n", baseMAC[0], baseMAC[1], baseMAC[2], baseMAC[3], baseMAC[4], baseMAC[5]);
-  } else {
-    Serial.println("Failed to read MAC address");
+    Serial.println("LESS THAN");
+    digitalWrite(LED_PIN_2, HIGH);
+    delay(2000);
+    digitalWrite(LED_PIN_2, LOW);
   }
 }
 
@@ -43,10 +60,8 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
 
-  //code to find MAC
-  // WiFi.STA.begin();
-  // Serial.print("MAC: ");
-  // readMACAddress();
+  pinMode(LED_PIN_1, OUTPUT);
+  pinMode(LED_PIN_2, OUTPUT);
 
   if (esp_now_init() != ESP_OK) {
     Serial.println("ERROR Initializing ESP-NOW");
@@ -63,12 +78,14 @@ void setup() {
     return;
   }
 
+  Serial.println("Intitializtion Successful Starting Loop");
+
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 }
 
 void loop() {
 
-  delay(5000);
+  delay(1000);
 
 }
 
