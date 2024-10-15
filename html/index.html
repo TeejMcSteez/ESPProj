@@ -1,3 +1,7 @@
+<!--
+This HTML File is what is sent as the response to the HTTP request sent by client 
+Used for testing UI
+-->
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -7,9 +11,9 @@
     body { margin: 0; font-family: Arial, sans-serif; background-color: #000; }
     .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
     .card { background-color: #f0f2f548; padding: 20px; margin: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }
-    .card h1 { font-size: 24px; color: #ff080896; margin-bottom: 15px; }
+    .card h1 { font-size: 24px; color: #FFF; margin-bottom: 15px; }
     .record { display: flex; flex-direction: column; align-items: flex-start; }
-    .record h2 { font-size: 20px; color: #ff0808a4; margin: 5px 0; }
+    .record h2 { font-size: 20px; color: #FFF; margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -23,11 +27,16 @@
     <div class='card'>
       <h1>Distance Records:</h1>
       <div class='record'>
-        <h2>Record 1: <span id=record1>0 cm</span></h2>
-        <h2>Record 2: <span id=record2>0 cm</span></h2>
-        <h2>Record 3: <span id=record3>0 cm</span></h2>
-        <h2>Record 4: <span id=record4>0 cm</span></h2>
-        <h2>Record 5: <span id=record5>0 cm</span></h2>
+        <h2>Record 1: <span id=record1>0 cm At Month-Day-20xx 00:00:00</span></h2>
+        <h2>Record 2: <span id=record2>0 cm At Month-Day-20xx 00:00:00</span></h2>
+        <h2>Record 3: <span id=record3>0 cm At Month-Day-20xx 00:00:00</span></h2>
+        <h2>Record 4: <span id=record4>0 cm At Month-Day-20xx 00:00:00</span></h2>
+        <h2>Record 5: <span id=record5>0 cm At Month-Day-20xx 00:00:00</span></h2>
+      </div>
+    </div>
+    <div class="card">
+      <div class="record">
+        <h1>Last Signature: Month-Day-20xx 00:00:00</h1>
       </div>
     </div>
   </div>

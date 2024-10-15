@@ -12,13 +12,14 @@ const int LED_PIN_1 = 13; // Blue LED
 const int LED_PIN_2 = 0;  // Red LED
 
 uint8_t incomingDist = 0;
-uint8_t Distances[5];
+uint8_t distanceRecords[5]; //Stores last 5 distances measured
 //to index last known distance values
-int i = 0;
+int distanceIndex = 0;
 //for time logging
-time_t now;
-struct tm timeInfo;
-char timeString[64];
+time_t nowTime;
+struct tm timeInfo; //Struct to store the UNIX time stamp info
+char timeString[64];//String to store conversion from UNIX time stamp to date & time
+char timeRecords[5][64];
 
 void OKLight() {
   digitalWrite(LED_PIN_1, HIGH);
@@ -32,12 +33,12 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
     Serial.print("Distance Received: ");
     Serial.println(incomingDist);
     checkDist(incomingDist);
-    Distances[i] = incomingDist;
+    distanceRecords[distanceIndex] = incomingDist;
     //adds last known distance values to ith index or sets the index back to 0 
-    if (i == 4) {
-      i = 0;
+    if (distanceIndex == 4 && distanceIndex > 0) {
+      distanceIndex--;//Stores the most recent records after filling record list at the last two records
     } else {
-      i++;
+      distanceIndex++;
     }
   } else {
     Serial.println("Received data of unexpected length");
@@ -50,9 +51,10 @@ void checkDist(uint8_t dist) {
     Serial.println("Signature Detected Close to Sensor");
     digitalWrite(LED_PIN_2, HIGH);
     //For logging last time entered
-    now = time(nullptr);
-    localtime_r(&now, &timeInfo);
+    nowTime = time(nullptr);
+    localtime_r(&nowTime, &timeInfo);
     strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
+    strftime(timeRecords[distanceIndex], sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
     delay(500);
     digitalWrite(LED_PIN_2, LOW);
   } 
@@ -117,31 +119,32 @@ void setup() {
                 "body { margin: 0; font-family: Arial, sans-serif; background-color: #000; }"
                 ".container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }"
                 ".card { background-color: #f0f2f548; padding: 20px; margin: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }"
-                ".card h1 { font-size: 24px; color: #ff0808a4; margin-bottom: 15px; }"
+                ".card h1 { font-size: 24px; color: #FFF; margin-bottom: 15px; }"
                 ".record { display: flex; flex-direction: column; align-items: flex-start; }"
-                ".record h2 { font-size: 20px; color: #ff0808a4; margin: 5px 0; }"
+                ".record h2 { font-size: 20px; color: #FFF; margin: 5px 0; }"
               "</style>"
               "</head><body>"
                 "<div class='container'>"
                   "<div class='card'>"
                     "<h1>Incoming Distance Value:</h1>"
                     "<h1>" + String(incomingDist) + " cm</h1>"
-                  "</div>"
+                  "</div>"//End card1 div
                   "<div class='card'>"
                   "<h1>Distance Records:</h1>"
                     "<div class ='record'>"
-                      "<h2>Distance Record 1: " + String(Distances[0]) + " cm</h2>"
-                      "<h2>Distance Record 2: " + String(Distances[1]) + " cm</h2>"
-                      "<h2>Distance Record 3: " + String(Distances[2]) + " cm</h2>"
-                      "<h2>Distance Record 4: " + String(Distances[3]) + " cm</h2>"
-                      "<h2>Distance Record 5: " + String(Distances[4]) + " cm</h2>"
+                      "<h2>Distance Record 1: " + String(distanceRecords[0]) + " cm" +" At " + String(timeRecords[0]) + "</h2>"
+                      "<h2>Distance Record 2: " + String(distanceRecords[1]) + " cm" +" At " + String(timeRecords[1]) + "</h2>"
+                      "<h2>Distance Record 3: " + String(distanceRecords[2]) + " cm" +" At " + String(timeRecords[2]) + "</h2>"
+                      "<h2>Distance Record 4: " + String(distanceRecords[3]) + " cm" +" At " + String(timeRecords[3]) + "</h2>"
+                      "<h2>Distance Record 5: " + String(distanceRecords[4]) + " cm" +" At " + String(timeRecords[4]) + "</h2>"
                     "</div>"
-                  "</div>"
+                  "</div>"//end card2
                   "<div class = 'card'>"
                     "<div class = 'record'>"
-                      "<h2>Last Signature: " + String(timeString) + "</h2>"
+                      "<h1>Last Signature: " + String(timeString) + "</h1>"
                     "</div>"
-                  "</div>"
+                  "</div>"//end card 3
+                "</div>"//end of container
                 "</body></html>";//END OF HTML
     request->send(200, "text/html", html);
   });
