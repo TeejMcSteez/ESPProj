@@ -1,13 +1,3 @@
-
-/*
-TODO:
-Fix distance and pulse in wiring issues 
-Fix sending improper amounts of data or loss of packets (maybe)
-Figure out how to properly handle the distance function to measure
-distance as a float but somehow handle it as an 8 bit integer
-*/
-
-
 //URL For Sketch Skeleton: https://randomnerdtutorials.com/esp-now-two-way-communication-esp32/
 #include <WiFi.h>//to find MAC 
 #include <esp_now.h>
@@ -51,12 +41,8 @@ float distSensor() {
   duration = pulseIn(ECHO_PIN, HIGH);
   Serial.print("Duration: ");
   Serial.println(duration);
-  /*
-  Problem with distance calculation as I want to use an integer however a floating point value defaults
-  to 0 therefore the output will always be 0. Have to cast the result of the calculation (float) to the distance (int)
-  Or maybe its a problem with how I handle the variables in my code idek
-  */
-  //calculates distance 
+
+  //calculates distance formula
   distance = (duration * 0.034)/2;//formula = D * 0.034/2 and * 100 is to convert into cm
   
   if (distance < 1) {
@@ -76,7 +62,7 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   esp_wifi_set_promiscuous(true);
-  esp_wifi_set_channel(7,WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_channel(7,WIFI_SECOND_CHAN_NONE);//sets wifi channel to the same as receiver connection
   esp_wifi_set_promiscuous(false);
 
   //Initializes esp_now which has to be done after starting WiFi!

@@ -18,7 +18,6 @@ int i = 0;
 //for time logging
 time_t now;
 struct tm timeInfo;
-
 char timeString[64];
 
 void OKLight() {
@@ -34,6 +33,7 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
     Serial.println(incomingDist);
     checkDist(incomingDist);
     Distances[i] = incomingDist;
+    //adds last known distance values to ith index or sets the index back to 0 
     if (i == 4) {
       i = 0;
     } else {
@@ -107,7 +107,6 @@ void setup() {
   } else {
     Serial.print("Receive callback registration failed: ");
     Serial.println(cbResult);
-    // Handle error accordingly
   }
   // Initialize Async Web Server
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
@@ -136,7 +135,11 @@ void setup() {
                       "<h2>Distance Record 3: " + String(Distances[2]) + " cm</h2>"
                       "<h2>Distance Record 4: " + String(Distances[3]) + " cm</h2>"
                       "<h2>Distance Record 5: " + String(Distances[4]) + " cm</h2>"
-                      "<h2>Last Entry: " + String(timeString) + "</h2>"
+                    "</div>"
+                  "</div>"
+                  "<div class = 'card'>"
+                    "<div class = 'record'>"
+                      "<h2>Last Signature: " + String(timeString) + "</h2>"
                     "</div>"
                   "</div>"
                 "</body></html>";//END OF HTML

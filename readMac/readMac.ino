@@ -23,6 +23,9 @@ void setup() {
   WiFi.STA.begin();
   Serial.print("MAC: ");
   readMACAddress();
+  
+  Serial.print("Wifi Channel:");
+  Serial.println(WiFi.channel());
 
   
 }
