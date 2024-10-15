@@ -109,15 +109,17 @@ void loop() {
 
   Serial.print("Global Distance: ");
   Serial.println(globalDist);
-  //stores function call in result for error checking and follows API documentation
-  esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
+ if (globalDist < 255) {
+    //stores function call in result for error checking and follows API documentation
+    esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
-  if (result != ESP_OK) {
-    Serial.println("Sent with Success");
-  } else {
-    Serial.println("Error W/ Reciever accepting the Data!");
-    Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
-  }
+    if (result != ESP_OK) {
+      Serial.println("Sent with Success");
+    } else {
+      Serial.println("Error W/ Reciever accepting the Data!");
+      Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
+    }
+ }
 
-  delay(1000);//.5 second delay  
+  delay(498);//.498 second delay  
 }

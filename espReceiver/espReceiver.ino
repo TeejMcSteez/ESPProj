@@ -45,17 +45,17 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
 }
 
 void checkDist(uint8_t dist) {
-  uint8_t threshold = 170; // Threshold distance
-  if (dist <= threshold) {
+  uint8_t threshold = 103; // Threshold distance
+  if (dist < threshold) {
     Serial.println("Signature Detected Close to Sensor");
     digitalWrite(LED_PIN_2, HIGH);
     //For logging last time entered
     now = time(nullptr);
     localtime_r(&now, &timeInfo);
     strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
-  } else {
+    delay(500);
     digitalWrite(LED_PIN_2, LOW);
-  }
+  } 
 }
 
 void printWifiStatus() {
