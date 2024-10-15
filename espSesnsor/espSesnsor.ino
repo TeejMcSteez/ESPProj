@@ -14,7 +14,7 @@ distance as a float but somehow handle it as an 8 bit integer
 #include <esp_wifi.h>
 
 const int TRIGGER_PIN = 23;
-const int ECHO_PIN = 0;
+const int ECHO_PIN = 16;
 
 //Receiver Address
 uint8_t MAC[] = {0x24,0xDC,0xC3,0x44,0xDC,0x70};
@@ -75,6 +75,9 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(7,WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(false);
 
   //Initializes esp_now which has to be done after starting WiFi!
   if (esp_now_init() != ESP_OK) {

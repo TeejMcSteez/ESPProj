@@ -1,91 +1,161 @@
-//URL For Sketch Skeleton: https://randomnerdtutorials.com/esp-now-two-way-communication-esp32/
-/*
-TODO:
-Network communication works 
-Outputting to the LED lights doesnt work prob wiring issue 
-See what I can do about other packet sizes or handling less packet loss.
-Maybe implement a small HTTP server also to see the values or notification logs on a display
-*/
-#include <WiFi.h>//to find MAC 
+#include <WiFi.h>
 #include <esp_now.h>
-#include <esp_wifi.h>
+#include <ESPAsyncWebServer.h>
+#include <ESPmDNS.h>
 
-uint8_t MAC[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};//Not currently needed for receiver
+const char* ssid = "World Wide Web";
+const char* password = "ablecapital114";
 
-const int LED_PIN_1 = 13;//blue
-const int LED_PIN_2 = 0;//red
+AsyncWebServer server(80);
 
-esp_now_peer_info_t peerInfo;
+const int LED_PIN_1 = 13; // Blue LED
+const int LED_PIN_2 = 0;  // Red LED
 
-uint8_t incomingDist;
+uint8_t incomingDist = 0;
+uint8_t Distances[5];
+//to index last known distance values
+int i = 0;
+//for time logging
+time_t now;
+struct tm timeInfo;
 
-void OnDataRecv(const uint8_t * MAC, const uint8_t *dist, int len) {
-  incomingDist = * dist;
-  Serial.print("Bytes Received:");
-  Serial.println(len);
-  Serial.print("From MAC: ");
-  Serial.print(*MAC + 0);
-  Serial.print(":");
-  Serial.print(*MAC + 1);
-  Serial.print(":");
-  Serial.print(*MAC + 2);
-  Serial.print(":");
-  Serial.print(*MAC + 3);
-  Serial.print(":");
-  Serial.print(*MAC + 4);
-  Serial.print(":");
-  Serial.println(*MAC + 5);
-  Serial.print("Distance Received:");
-  Serial.println(incomingDist);
+char timeString[64];
 
-  checkDist(incomingDist);
+void OKLight() {
+  digitalWrite(LED_PIN_1, HIGH);
+  delay(500);
+  digitalWrite(LED_PIN_1, LOW);
 }
-//Should miss 4 packets while executing 
-void checkDist(uint8_t dist) {
-  uint8_t x = 90;//some distance assign when testing
-  if (dist >= x) {
-    Serial.println("GREATER THAN OR =");
-    digitalWrite(LED_PIN_1, HIGH);
-    delay(500);
-    digitalWrite(LED_PIN_1, LOW);
+
+void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
+  if (len == sizeof(incomingDist)) {
+    memcpy(&incomingDist, data, sizeof(incomingDist));
+    Serial.print("Distance Received: ");
+    Serial.println(incomingDist);
+    checkDist(incomingDist);
+    Distances[i] = incomingDist;
+    if (i == 4) {
+      i = 0;
+    } else {
+      i++;
+    }
   } else {
-    Serial.println("LESS THAN");
+    Serial.println("Received data of unexpected length");
+  }
+}
+
+void checkDist(uint8_t dist) {
+  uint8_t threshold = 170; // Threshold distance
+  if (dist <= threshold) {
+    Serial.println("Signature Detected Close to Sensor");
     digitalWrite(LED_PIN_2, HIGH);
-    delay(500);
+    //For logging last time entered
+    now = time(nullptr);
+    localtime_r(&now, &timeInfo);
+    strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
+  } else {
     digitalWrite(LED_PIN_2, LOW);
   }
 }
 
+void printWifiStatus() {
+  Serial.print("Connected to: ");
+  Serial.println(WiFi.SSID());
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("RSSI: ");
+  Serial.print(WiFi.RSSI());
+  Serial.println(" dBm");
+}
+
 void setup() {
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
 
   pinMode(LED_PIN_1, OUTPUT);
   pinMode(LED_PIN_2, OUTPUT);
 
+  // Initialize Wi-Fi
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  // Wait for connection
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nConnected.");
+  printWifiStatus();
+
+  // Start mDNS service
+  if (!MDNS.begin("room")) {
+    Serial.println("Error starting mDNS");
+    return;
+  }
+  Serial.println("\nmDNS responder started");
+
+  // Initialize ESP-NOW
   if (esp_now_init() != ESP_OK) {
-    Serial.println("ERROR Initializing ESP-NOW");
+    Serial.println("Error initializing ESP-NOW");
     return;
   }
 
-  // Registering Peer
-  memcpy(peerInfo.peer_addr, MAC, 6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("Failed to add peer");
-    return;
+  // Register receive callback
+  esp_err_t cbResult = esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+  if (cbResult == ESP_OK) {
+    Serial.println("Receive callback registered successfully");
+  } else {
+    Serial.print("Receive callback registration failed: ");
+    Serial.println(cbResult);
+    // Handle error accordingly
   }
+  // Initialize Async Web Server
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    String html = "<!DOCTYPE HTML><html><head>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+            "<meta http-equiv='refresh' content='5'>"
+              "<style>"
+                "body { margin: 0; font-family: Arial, sans-serif; background-color: #000; }"
+                ".container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }"
+                ".card { background-color: #f0f2f548; padding: 20px; margin: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }"
+                ".card h1 { font-size: 24px; color: #ff0808a4; margin-bottom: 15px; }"
+                ".record { display: flex; flex-direction: column; align-items: flex-start; }"
+                ".record h2 { font-size: 20px; color: #ff0808a4; margin: 5px 0; }"
+              "</style>"
+              "</head><body>"
+                "<div class='container'>"
+                  "<div class='card'>"
+                    "<h1>Incoming Distance Value:</h1>"
+                    "<h1>" + String(incomingDist) + " cm</h1>"
+                  "</div>"
+                  "<div class='card'>"
+                  "<h1>Distance Records:</h1>"
+                    "<div class ='record'>"
+                      "<h2>Distance Record 1: " + String(Distances[0]) + " cm</h2>"
+                      "<h2>Distance Record 2: " + String(Distances[1]) + " cm</h2>"
+                      "<h2>Distance Record 3: " + String(Distances[2]) + " cm</h2>"
+                      "<h2>Distance Record 4: " + String(Distances[3]) + " cm</h2>"
+                      "<h2>Distance Record 5: " + String(Distances[4]) + " cm</h2>"
+                      "<h2>Last Entry: " + String(timeString) + "</h2>"
+                    "</div>"
+                  "</div>"
+                "</body></html>";//END OF HTML
+    request->send(200, "text/html", html);
+  });
 
-  Serial.println("Intitializtion Successful Starting Loop");
+  server.begin();
+  Serial.println("Web server started.");
+  //Time logging setup
+  configTime(-18000, 3600, "pool.ntp.org", "time.nist.gov");//-18000 is the UTC Eastern Standard Time offset in seconds and 3600 is the offset for daylight savings time and 0 is no daylight savings
+  if (!getLocalTime(&timeInfo)) {
+    Serial.println("Failed to obtain time data");
+  }
+  Serial.println("Time Synced");
 
-  esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+  OKLight();
+  Serial.println("Setup completed.");
 }
 
 void loop() {
-
-  delay(500);
-
+  //nothing needed everythings Async
 }
-
