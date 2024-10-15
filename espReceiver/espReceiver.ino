@@ -45,7 +45,7 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
 }
 
 void checkDist(uint8_t dist) {
-  uint8_t threshold = 103; // Threshold distance
+  uint8_t threshold = 140; // Threshold distance
   if (dist < threshold) {
     Serial.println("Signature Detected Close to Sensor");
     digitalWrite(LED_PIN_2, HIGH);
