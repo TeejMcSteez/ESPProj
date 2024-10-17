@@ -28,7 +28,7 @@ void OKLight() {
 }
 
 void indexCount() {
-  if (distanceIndex == 4 && distanceIndex > 0) {
+  if (distanceIndex == 4) {
       distanceIndex = 0;
       //checks if null values have been filled and if so where the index is at currently
     } else {
