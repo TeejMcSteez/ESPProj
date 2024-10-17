@@ -14,7 +14,7 @@ const int LED_PIN_2 = 0;  // Red LED
 uint8_t incomingDist = 0;
 uint8_t distanceRecords[5]; //Stores last 5 distances measured
 //to index last known distance values
-int distanceIndex = 0, indexCounter = 0;
+int distanceIndex = 0;
 //for time logging
 time_t nowTime;
 struct tm timeInfo; //Struct to store the UNIX time stamp info
@@ -29,18 +29,8 @@ void OKLight() {
 
 void indexCount() {
   if (distanceIndex == 4 && distanceIndex > 0) {
-      indexCounter = 1;
+      distanceIndex = 0;
       //checks if null values have been filled and if so where the index is at currently
-      if (distanceIndex == 4 && indexCounter == 1) {
-        distanceIndex = 3;
-      } else if (distanceIndex == 3 && indexCounter == 1) {
-        distanceIndex = 2;
-      } else if (distanceIndex == 2 && indexCounter == 1) {
-        distanceIndex = 1;
-      } else {
-        distanceIndex--;
-        indexCounter = 0;
-      }  
     } else {
       distanceIndex++;
     }
