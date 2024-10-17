@@ -14,7 +14,7 @@ const int LED_PIN_2 = 0;  // Red LED
 uint8_t incomingDist = 0;
 uint8_t distanceRecords[5]; //Stores last 5 distances measured
 //to index last known distance values
-int distanceIndex = 0;
+int distanceIndex = 0, indexCounter = 0;
 //for time logging
 time_t nowTime;
 struct tm timeInfo; //Struct to store the UNIX time stamp info
@@ -27,19 +27,32 @@ void OKLight() {
   digitalWrite(LED_PIN_1, LOW);
 }
 
+void indexCount() {
+  if (distanceIndex == 4 && distanceIndex > 0) {
+      indexCounter = 1;
+      //checks if null values have been filled and if so where the index is at currently
+      if (distanceIndex == 4 && indexCounter == 1) {
+        distanceIndex = 3;
+      } else if (distanceIndex == 3 && indexCounter == 1) {
+        distanceIndex = 2;
+      } else if (distanceIndex == 2 && indexCounter == 1) {
+        distanceIndex = 1;
+      } else {
+        distanceIndex--;
+        indexCounter = 0;
+      }  
+    } else {
+      distanceIndex++;
+    }
+}
+
 void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
   if (len == sizeof(incomingDist)) {
     memcpy(&incomingDist, data, sizeof(incomingDist));
     Serial.print("Distance Received: ");
     Serial.println(incomingDist);
     checkDist(incomingDist);
-    distanceRecords[distanceIndex] = incomingDist;
     //adds last known distance values to ith index or sets the index back to 0 
-    if (distanceIndex == 4 && distanceIndex > 0) {
-      distanceIndex--;//Stores the most recent records after filling record list at the last two records
-    } else {
-      distanceIndex++;
-    }
   } else {
     Serial.println("Received data of unexpected length");
   }
@@ -55,13 +68,15 @@ void checkDist(uint8_t dist) {
     localtime_r(&nowTime, &timeInfo);
     strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
     strftime(timeRecords[distanceIndex], sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
+    distanceRecords[distanceIndex] = incomingDist;
+    indexCount();
     delay(500);
     digitalWrite(LED_PIN_2, LOW);
   } 
 }
 
 void printWifiStatus() {
-  Serial.print("Connected to: ");
+  Serial.print("\nConnected to: ");
   Serial.println(WiFi.SSID());
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
@@ -102,14 +117,6 @@ void setup() {
     return;
   }
 
-  // Register receive callback
-  esp_err_t cbResult = esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
-  if (cbResult == ESP_OK) {
-    Serial.println("Receive callback registered successfully");
-  } else {
-    Serial.print("Receive callback registration failed: ");
-    Serial.println(cbResult);
-  }
   // Initialize Async Web Server
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
     String html = "<!DOCTYPE HTML><html><head>"
@@ -158,10 +165,19 @@ void setup() {
   }
   Serial.println("Time Synced");
 
+  // Register receive callback
+  esp_err_t cbResult = esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+  if (cbResult == ESP_OK) {
+    Serial.println("Receive callback registered successfully");
+  } else {
+    Serial.print("Receive callback registration failed: ");
+    Serial.println(cbResult);
+  }
+
   OKLight();
   Serial.println("Setup completed.");
 }
 
 void loop() {
-  //nothing needed everythings Async
+  //Async
 }
