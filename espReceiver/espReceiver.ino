@@ -3,8 +3,8 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 
-const char* ssid = "World Wide Web";
-const char* password = "ablecapital114";
+const char* ssid = "Your SSID";
+const char* password = "Your Pass";
 
 AsyncWebServer server(80);
 
@@ -59,7 +59,7 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* data, int len) {
 }
 
 void checkDist(uint8_t dist) {
-  uint8_t threshold = 140; // Threshold distance
+  uint8_t threshold = 140; // Threshold distance; change for position of sensor
   if (dist < threshold) {
     Serial.println("Signature Detected Close to Sensor");
     digitalWrite(LED_PIN_2, HIGH);
