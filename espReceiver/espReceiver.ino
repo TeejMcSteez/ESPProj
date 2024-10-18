@@ -3,8 +3,8 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 
-const char* ssid = "Your SSID";
-const char* password = "Your Pass";
+const char* ssid = "World Wide Web";
+const char* password = "ablecapital114";
 
 AsyncWebServer server(80);
 

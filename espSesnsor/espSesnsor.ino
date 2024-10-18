@@ -51,7 +51,11 @@ float distSensor() {
   } else if (distance > 255) {
     Serial.println("Distance > 255, returning 255");
     return 255;
-  } else {
+  } else if (distance > 200) {
+    Serial.println("Distance > 200 returning 200");
+    return 200;
+  }
+   else {
     return static_cast<uint8_t>(distance);
   } 
 }
@@ -95,7 +99,7 @@ void loop() {
 
   Serial.print("Global Distance: ");
   Serial.println(globalDist);
- if (globalDist < 255) {
+ if (globalDist < 200) {
     //stores function call in result for error checking and follows API documentation
     esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
 
@@ -107,5 +111,5 @@ void loop() {
     }
  }
 
-  delay(498);//.498 second delay  
+  delay(200);//.498 second delay  
 }
