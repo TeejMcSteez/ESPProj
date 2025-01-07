@@ -15,3 +15,7 @@ it has a long range see -> https://www.reddit.com/r/esp32/comments/o1xpzn/espnow
 2. esp_now -> https://github.com/espressif/arduino-esp32
 3. ESPAsyncWebServer -> https://github.com/me-no-dev/ESPAsyncWebServer 
 4. ESPmDNS -> https://github.com/espressif/arduino-esp32/blob/master/libraries/ESPmDNS/src/ESPmDNS.h (Not Required but used for easy to remember URL rather than connecting at the port and ip specifically [QOL enhancement])
+---
+**NOTE** 
+---
+This project is VERY broken as I am not good with the low level stuff yet and is more to learn about how it works by breaking stuff
