@@ -1,115 +1,126 @@
-//URL For Sketch Skeleton: https://randomnerdtutorials.com/esp-now-two-way-communication-esp32/
-#include <WiFi.h>//to find MAC 
+#include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
 
 const int TRIGGER_PIN = 23;
 const int ECHO_PIN = 16;
+const uint8_t WIFI_CHANNEL = 1;  // Match this with receiver
 
-//Receiver Address
-uint8_t MAC[] = {0x24,0xDC,0xC3,0x44,0xDC,0x70};
-//for peerinfo
+// Receiver MAC Address - double check this matches your receiver's MAC
+uint8_t receiverMac[] = {0x24, 0xDC, 0xC3, 0x44, 0xDC, 0x70};
+
 esp_now_peer_info_t peerInfo;
-//checksum for function
 char *success;
-//global variable for distance measure
 uint8_t globalDist;
-long duration;
-float distance;
 
-//callback to send data
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Sent with Success" : "Failed to send");
-  if (status == 0) {
-    success = "Sent with Success";
-  } else {
-    success = "Failed to send";
-  }
+    Serial.print("\r\nPacket sent to: ");
+    for (int i = 0; i < 6; i++) {
+        Serial.printf("%02X", mac_addr[i]);
+        if (i < 5) Serial.print(":");
+    }
+    Serial.print("\nStatus: ");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Failed");
 }
 
 float distSensor() {
-  duration = 0;
-  //variables to calculate distance
-  digitalWrite(TRIGGER_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIGGER_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIGGER_PIN, LOW);
-  //CALCULATE DISTANCE
-  //reads wave travel time in microseconds
-  duration = pulseIn(ECHO_PIN, HIGH);
-  Serial.print("Duration: ");
-  Serial.println(duration);
+    // Clear the trigger pin
+    digitalWrite(TRIGGER_PIN, LOW);
+    delayMicroseconds(2);
+    
+    // Send the trigger pulse
+    digitalWrite(TRIGGER_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIGGER_PIN, LOW);
+    
+    // Read the echo pin
+    long duration = pulseIn(ECHO_PIN, HIGH);
+    
+    // Calculate distance
+    float distance = (duration * 0.034) / 2;
+    
+    Serial.print("Raw distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+    
+    // Constrain the distance value
+    if (distance < 1) {
+        Serial.println("Distance < 1cm, returning 0");
+        return 0;
+    } else if (distance > 255) {
+        Serial.println("Distance > 255cm, returning 255");
+        return 255;
+    } else if (distance > 200) {
+        Serial.println("Distance > 200cm, returning 200");
+        return 200;
+    }
+    return distance;
+}
 
-  //calculates distance formula
-  distance = (duration * 0.034)/2;//formula = D * 0.034/2 and * 100 is to convert into cm
-  
-  if (distance < 1) {
-    Serial.println("Distance is < 1, returning 0");
-    return 0;
-  } else if (distance > 255) {
-    Serial.println("Distance > 255, returning 255");
-    return 255;
-  } else if (distance > 200) {
-    Serial.println("Distance > 200 returning 200");
-    return 200;
-  }
-   else {
-    return static_cast<uint8_t>(distance);
-  } 
+void initESPNow() {
+    WiFi.mode(WIFI_STA);
+    
+    // Print our MAC address for debugging
+    Serial.print("Sender MAC: ");
+    Serial.println(WiFi.macAddress());
+    
+    // Set WiFi channel
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_promiscuous(false);
+    
+    // Init ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+        return;
+    }
+    
+    // Register callback
+    esp_now_register_send_cb(OnDataSent);
+    
+    // Register peer
+    memset(&peerInfo, 0, sizeof(peerInfo));
+    memcpy(peerInfo.peer_addr, receiverMac, 6);
+    peerInfo.channel = WIFI_CHANNEL;
+    peerInfo.encrypt = false;
+    
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Failed to add peer");
+        return;
+    }
+    
+    Serial.println("ESP-NOW initialized successfully");
 }
 
 void setup() {
-  pinMode(TRIGGER_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
-  esp_wifi_set_promiscuous(true);
-  esp_wifi_set_channel(7,WIFI_SECOND_CHAN_NONE);//sets wifi channel to the same as receiver connection
-  esp_wifi_set_promiscuous(false);
-
-  //Initializes esp_now which has to be done after starting WiFi!
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("ERROR, ESP Init Failed . . .");
-    return;
-  }
-  //registers esp to get transmitted packet data
-  if (esp_now_register_send_cb(OnDataSent) != ESP_OK) {
-    Serial.println("Packet Registration Error!");
-    return;
-  }
-  //registers peer
-  memcpy(peerInfo.peer_addr, MAC, 6);//6 = sizeof(MAC)
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-  //adds peer
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("Failed to add peer");
-    return;
-  }
+    Serial.begin(115200);
+    
+    // Configure pins
+    pinMode(TRIGGER_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    
+    // Initialize ESP-NOW
+    initESPNow();
 }
 
 void loop() {
-  //resets global distance variable for every distance
-  globalDist = 0;
-  //gets distance of sensor to send to receiver
-  globalDist = distSensor();
-  delay(2);
-
-  Serial.print("Global Distance: ");
-  Serial.println(globalDist);
- if (globalDist < 200) {
-    //stores function call in result for error checking and follows API documentation
-    esp_err_t result = esp_now_send(MAC, &globalDist, sizeof(globalDist)); 
-
-    if (result != ESP_OK) {
-      Serial.println("Sent with Success");
-    } else {
-      Serial.println("Error W/ Reciever accepting the Data!");
-      Serial.println("Check MAC Address or callback functions to ensure correct addressing and proper data handling");
+    // Get distance reading
+    globalDist = static_cast<uint8_t>(distSensor());
+    
+    Serial.print("Sending distance: ");
+    Serial.println(globalDist);
+    
+    // Only send if distance is less than 200
+    if (globalDist < 200) {
+        esp_err_t result = esp_now_send(receiverMac, &globalDist, sizeof(globalDist));
+        
+        if (result == ESP_OK) {
+            Serial.println("Sent successfully");
+        } else {
+            Serial.println("Send failed! Error code: ");
+            Serial.println(result);
+        }
     }
- }
-
-  delay(200);//.498 second delay  
+    
+    delay(1000);  // Wait 1 second before next reading
 }
